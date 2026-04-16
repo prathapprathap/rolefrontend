@@ -34,8 +34,20 @@ const IconsPage = () => {
         }
     };
 
+    const [errors, setErrors] = useState({});
+
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.name.trim()) newErrors.name = 'Icon name is required';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             if (editingIcon) {
                 await axios.put(`${import.meta.env.VITE_API_URL}/icons/${editingIcon.id}`, formData);
@@ -45,9 +57,10 @@ const IconsPage = () => {
             setIsModalOpen(false);
             setEditingIcon(null);
             setFormData({ name: '', prefix: 'lucide', icon_url: '', status: 'active' });
+            setErrors({});
             fetchIcons();
         } catch (err) {
-            alert('Operation failed');
+            setErrors({ submit: err.response?.data?.error || 'Operation failed' });
         }
     };
 
@@ -176,15 +189,21 @@ const IconsPage = () => {
                     <div className="modal-content glass-card fade-in">
                         <h2>{editingIcon ? 'Edit Icon' : 'Create New Icon'}</h2>
                         <form onSubmit={handleSubmit}>
+                            {errors.submit && <div className="error-box" style={{ marginBottom: '15px' }}>{errors.submit}</div>}
+
                             <div className="input-group">
                                 <label>Icon Name (Lucide name or label)</label>
                                 <input
                                     type="text"
+                                    className={errors.name ? 'error' : ''}
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, name: e.target.value });
+                                        if (errors.name) setErrors({ ...errors, name: null });
+                                    }}
                                     placeholder="e.g. LayoutDashboard"
-                                    required
                                 />
+                                {errors.name && <span className="error-text">{errors.name}</span>}
                             </div>
 
                             <div className="input-group">

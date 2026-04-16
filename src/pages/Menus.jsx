@@ -81,8 +81,24 @@ const Menus = () => {
         fetchAllMenus();
     }, [page]);
 
+    const [errors, setErrors] = useState({});
+
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.title.trim()) newErrors.title = 'Menu title is required';
+        if (!formData.path.trim()) newErrors.path = 'Route path is required';
+        else if (!formData.path.startsWith('/')) newErrors.path = 'Path must start with /';
+
+        if (!formData.icon_id) newErrors.icon_id = 'Please select an icon';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             const data = {
                 ...formData,
@@ -99,9 +115,8 @@ const Menus = () => {
             setFormData({ title: '', path: '', icon_id: '', parent_id: null, order: 0 });
             fetchMenus();
             fetchAllMenus();
-            // window.location.reload(); // Removed reload as we can update state or just let the user see the change
         } catch (err) {
-            alert('Operation failed');
+            setErrors({ submit: err.response?.data?.error || 'Operation failed' });
         }
     };
 
@@ -232,26 +247,36 @@ const Menus = () => {
                     <div className="modal-content glass-card fade-in">
                         <h2>{editingMenu ? 'Edit Menu Item' : 'Create Menu Item'}</h2>
                         <form onSubmit={handleSubmit}>
+                            {errors.submit && <div className="error-box" style={{ marginBottom: '15px' }}>{errors.submit}</div>}
+
                             <div className="input-grid">
                                 <div className="input-group">
                                     <label>Menu Title</label>
                                     <input
                                         type="text"
+                                        className={errors.title ? 'error' : ''}
                                         value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, title: e.target.value });
+                                            if (errors.title) setErrors({ ...errors, title: null });
+                                        }}
                                         placeholder="e.g. Analytics"
-                                        required
                                     />
+                                    {errors.title && <span className="error-text">{errors.title}</span>}
                                 </div>
                                 <div className="input-group">
                                     <label>Route Path</label>
                                     <input
                                         type="text"
+                                        className={errors.path ? 'error' : ''}
                                         value={formData.path}
-                                        onChange={(e) => setFormData({ ...formData, path: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, path: e.target.value });
+                                            if (errors.path) setErrors({ ...errors, path: null });
+                                        }}
                                         placeholder="e.g. /analytics"
-                                        required
                                     />
+                                    {errors.path && <span className="error-text">{errors.path}</span>}
                                 </div>
                             </div>
 
@@ -259,9 +284,12 @@ const Menus = () => {
                                 <div className="input-group">
                                     <label>Select Icon</label>
                                     <select
+                                        className={errors.icon_id ? 'error' : ''}
                                         value={formData.icon_id || ""}
-                                        onChange={(e) => setFormData({ ...formData, icon_id: e.target.value })}
-                                        required
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, icon_id: e.target.value });
+                                            if (errors.icon_id) setErrors({ ...errors, icon_id: null });
+                                        }}
                                     >
                                         <option value="">Select an icon...</option>
                                         {icons.map(icon => (

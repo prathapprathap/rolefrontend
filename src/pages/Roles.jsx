@@ -32,8 +32,21 @@ const Roles = () => {
         fetchMenus();
     }, [page]);
 
+    const [errors, setErrors] = useState({});
+
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.role_name.trim()) newErrors.role_name = 'Role name is required';
+        else if (formData.role_name.length < 3) newErrors.role_name = 'Role name must be at least 3 characters';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             if (editingRole) {
                 await axios.put(`${import.meta.env.VITE_API_URL}/roles/${editingRole.id}`, formData);
@@ -45,7 +58,7 @@ const Roles = () => {
             setFormData({ role_name: '', permissions: [], status: 'active' });
             fetchRoles();
         } catch (err) {
-            alert('Operation failed');
+            setErrors({ submit: err.response?.data?.error || 'Operation failed' });
         }
     };
 
@@ -135,15 +148,21 @@ const Roles = () => {
                     <div className="modal-content glass-card fade-in">
                         <h2>{editingRole ? 'Edit Role' : 'Create New Role'}</h2>
                         <form onSubmit={handleSubmit}>
+                            {errors.submit && <div className="error-box" style={{ marginBottom: '15px' }}>{errors.submit}</div>}
+
                             <div className="input-group">
                                 <label>Role Name</label>
                                 <input
                                     type="text"
+                                    className={errors.role_name ? 'error' : ''}
                                     value={formData.role_name}
-                                    onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, role_name: e.target.value });
+                                        if (errors.role_name) setErrors({ ...errors, role_name: null });
+                                    }}
                                     placeholder="e.g. Sales Manager"
-                                    required
                                 />
+                                {errors.role_name && <span className="error-text">{errors.role_name}</span>}
                             </div>
 
                             <div className="permissions-section">
