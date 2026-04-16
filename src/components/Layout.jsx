@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as LucideIcons from 'lucide-react';
-import { ChevronRight, LogOut } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
@@ -56,6 +56,7 @@ const Layout = ({ children }) => {
   const [menus, setMenus] = useState([]);
   const user = JSON.parse(localStorage.getItem('user'));
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') !== 'light');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -104,6 +105,11 @@ const Layout = ({ children }) => {
     fetchMenus();
   }, []);
 
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -112,10 +118,16 @@ const Layout = ({ children }) => {
 
   return (
     <div className="layout">
-      <aside className="sidebar glass-card">
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && <div className="sidebar-overlay-bg" onClick={() => setIsSidebarOpen(false)}></div>}
+
+      <aside className={`sidebar glass-card ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <LucideIcons.ShieldCheck size={32} color="#6366f1" />
           <h2>AdminPro</h2>
+          <button className="mobile-close-btn" onClick={() => setIsSidebarOpen(false)}>
+            <LucideIcons.X size={24} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -127,30 +139,35 @@ const Layout = ({ children }) => {
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="avatar">{user?.username?.[0]?.toUpperCase()}</div>
-            <div>
+            <div className="user-details-text">
               <p className="user-name">{user?.username}</p>
               <p className="user-role">{user?.role}</p>
             </div>
           </div>
           <button onClick={handleLogout} className="logout-btn" title="Logout">
-            <LogOut size={18} />
+            <LucideIcons.LogOut size={18} />
           </button>
         </div>
       </aside>
 
       <main className="main-content">
         <header className="top-nav glass-card">
-          <div className="breadcrumb">
-            Admin {breadcrumbList.length > 0 && ' / '}
-            {breadcrumbList.map((crumb, index) => (
-              <span key={index}>
-                <span className={index === breadcrumbList.length - 1 ? 'current' : ''}>{crumb}</span>
-                {index < breadcrumbList.length - 1 && ' / '}
-              </span>
-            ))}
-            {breadcrumbList.length === 0 && location.pathname !== '/' && (
-              <span className="current">{location.pathname.split('/').pop().charAt(0).toUpperCase() + location.pathname.split('/').pop().slice(1)}</span>
-            )}
+          <div className="top-nav-left">
+            <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>
+              <LucideIcons.Menu size={24} />
+            </button>
+            <div className="breadcrumb">
+              <span className="breadcrumb-root">Admin</span> {breadcrumbList.length > 0 && ' / '}
+              {breadcrumbList.map((crumb, index) => (
+                <span key={index}>
+                  <span className={index === breadcrumbList.length - 1 ? 'current' : ''}>{crumb}</span>
+                  {index < breadcrumbList.length - 1 && ' / '}
+                </span>
+              ))}
+              {breadcrumbList.length === 0 && location.pathname !== '/' && (
+                <span className="current">{location.pathname.split('/').pop().charAt(0).toUpperCase() + location.pathname.split('/').pop().slice(1)}</span>
+              )}
+            </div>
           </div>
           <div className="top-nav-actions">
             <button
@@ -185,6 +202,7 @@ const Layout = ({ children }) => {
         .layout {
           display: flex;
           min-height: 100vh;
+          position: relative;
         }
         .sidebar {
           width: 280px;
@@ -195,14 +213,41 @@ const Layout = ({ children }) => {
           flex-direction: column;
           border-radius: 0;
           border-right: 1px solid var(--border-color);
+          z-index: 1001;
+          background: var(--bg-card);
+          transition: transform 0.3s ease;
         }
+
+        .sidebar-overlay-bg {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+        }
+
+        .hamburger-btn {
+          display: none;
+          color: var(--text-main);
+          padding: 8px;
+          margin-right: 12px;
+        }
+
+        .mobile-close-btn {
+          display: none;
+          color: var(--text-muted);
+          padding: 8px;
+        }
+
         .sidebar-header {
           padding: 30px;
           display: flex;
           align-items: center;
-          gap: 12px;
+          justify-content: space-between;
           border-bottom: 1px solid var(--border-color);
         }
+        .sidebar-header h2 { font-size: 1.5rem; }
+
         .sidebar-nav {
           flex: 1;
           padding: 20px 15px;
@@ -259,9 +304,10 @@ const Layout = ({ children }) => {
           align-items: center;
           justify-content: center;
           font-weight: bold;
+          color: white;
         }
-        .user-name { font-weight: 600; font-size: 0.9rem; }
-        .user-role { font-size: 0.75rem; color: var(--text-muted); }
+        .user-name { font-weight: 600; font-size: 0.9rem; margin: 0; }
+        .user-role { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
         .logout-btn {
           background: none;
           color: var(--text-muted);
@@ -278,6 +324,7 @@ const Layout = ({ children }) => {
           display: flex;
           flex-direction: column;
           gap: 20px;
+          min-width: 0;
         }
         .top-nav {
           padding: 15px 25px;
@@ -285,9 +332,16 @@ const Layout = ({ children }) => {
           justify-content: space-between;
           align-items: center;
         }
+        .top-nav-left {
+          display: flex;
+          align-items: center;
+        }
         .breadcrumb {
           font-size: 0.9rem;
           color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .breadcrumb .current {
           color: var(--text-main);
@@ -295,6 +349,39 @@ const Layout = ({ children }) => {
         }
         .page-wrapper {
           flex: 1;
+        }
+
+        /* Responsive Mobile Styles */
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed;
+            left: 0;
+            transform: translateX(-100%);
+          }
+          .sidebar.open {
+            transform: translateX(0);
+          }
+          .hamburger-btn {
+            display: block;
+          }
+          .mobile-close-btn {
+            display: block;
+          }
+          .main-content {
+            padding: 10px;
+          }
+          .top-nav {
+            padding: 10px 15px;
+          }
+          .breadcrumb-root {
+            display: none;
+          }
+          .user-details-text {
+            display: none;
+          }
+          .sidebar-header {
+            padding: 20px;
+          }
         }
       `}</style>
     </div>
