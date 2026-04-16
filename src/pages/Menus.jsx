@@ -11,12 +11,14 @@ const Menus = () => {
     const [totalPages, setTotalPages] = useState(0);
     const limit = 6;
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [editingMenu, setEditingMenu] = useState(null);
     const [formData, setFormData] = useState({
         title: '', path: '', icon_id: '', parent_id: null, order: 0
     });
 
     const fetchMenus = async () => {
+        setLoading(true);
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/menus/all?page=${page}&limit=${limit}`);
             if (res.data.menus) {
@@ -25,8 +27,8 @@ const Menus = () => {
             } else {
                 setMenus(res.data);
             }
-        } catch (err) {
-            console.error('Failed to fetch menus');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -167,54 +169,65 @@ const Menus = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {menus.map(menu => {
-                                const iconUrl = menu.Icon?.icon_url;
-                                const iconName = menu.Icon ? menu.Icon.name : 'Circle';
-                                const Icon = LucideIcons[iconName] || LucideIcons.Circle;
-                                const depth = getMenuDepth(menu.id, allMenus.length ? allMenus : menus);
-                                const parent = allMenus.find(m => m.id === menu.parent_id) || menus.find(m => m.id === menu.parent_id);
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="6">
+                                        <div className="loader-container">
+                                            <div className="spinner"></div>
+                                            <p>Loading menus...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                menus.map(menu => {
+                                    const iconUrl = menu.Icon?.icon_url;
+                                    const iconName = menu.Icon ? menu.Icon.name : 'Circle';
+                                    const Icon = LucideIcons[iconName] || LucideIcons.Circle;
+                                    const depth = getMenuDepth(menu.id, allMenus.length ? allMenus : menus);
+                                    const parent = allMenus.find(m => m.id === menu.parent_id) || menus.find(m => m.id === menu.parent_id);
 
-                                // Build parent path
-                                const getParentPath = (menuItem) => {
-                                    const path = [];
-                                    let current = allMenus.find(m => m.id === menuItem.parent_id);
-                                    while (current) {
-                                        path.unshift(current.title);
-                                        current = allMenus.find(m => m.id === current.parent_id);
-                                    }
-                                    return path.join(' › ');
-                                };
+                                    // Build parent path
+                                    const getParentPath = (menuItem) => {
+                                        const path = [];
+                                        let current = allMenus.find(m => m.id === menuItem.parent_id);
+                                        while (current) {
+                                            path.unshift(current.title);
+                                            current = allMenus.find(m => m.id === current.parent_id);
+                                        }
+                                        return path.join(' › ');
+                                    };
 
-                                return (
-                                    <tr key={menu.id}>
-                                        <td>{menu.order}</td>
-                                        <td>
-                                            {iconUrl ? (
-                                                <img src={iconUrl} alt={menu.title} style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-                                            ) : (
-                                                <Icon size={18} color="var(--primary)" />
-                                            )}
-                                        </td>
-                                        <td style={{ fontWeight: '600' }}>
-                                            {depth > 0 && <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>{'└'.padStart(depth * 2, ' ')}</span>}
-                                            {menu.title}
-                                            {depth > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', marginLeft: '8px', background: 'rgba(99,102,241,0.1)', padding: '2px 6px', borderRadius: '4px' }}>L{depth}</span>}
-                                        </td>
-                                        <td><code>{menu.path}</code></td>
-                                        <td>{parent ? <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{getParentPath(menu)} › <strong style={{ color: 'var(--text-main)' }}>{parent.title}</strong></span> : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                                        <td>
-                                            <div className="table-actions">
-                                                <button className="icon-btn" onClick={() => openEdit(menu)} title="Edit">
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button className="icon-btn text-danger" onClick={() => deleteMenu(menu.id)} title="Delete">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                    return (
+                                        <tr key={menu.id}>
+                                            <td>{menu.order}</td>
+                                            <td>
+                                                {iconUrl ? (
+                                                    <img src={iconUrl} alt={menu.title} style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+                                                ) : (
+                                                    <Icon size={18} color="var(--primary)" />
+                                                )}
+                                            </td>
+                                            <td style={{ fontWeight: '600' }}>
+                                                {depth > 0 && <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>{'└'.padStart(depth * 2, ' ')}</span>}
+                                                {menu.title}
+                                                {depth > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--primary)', marginLeft: '8px', background: 'rgba(99,102,241,0.1)', padding: '2px 6px', borderRadius: '4px' }}>L{depth}</span>}
+                                            </td>
+                                            <td><code>{menu.path}</code></td>
+                                            <td>{parent ? <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{getParentPath(menu)} › <strong style={{ color: 'var(--text-main)' }}>{parent.title}</strong></span> : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                                            <td>
+                                                <div className="table-actions">
+                                                    <button className="icon-btn" onClick={() => openEdit(menu)} title="Edit">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button className="icon-btn text-danger" onClick={() => deleteMenu(menu.id)} title="Delete">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>

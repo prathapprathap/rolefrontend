@@ -77,17 +77,28 @@ const Dashboard = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((row, idx) => (
-                                <tr key={idx}>
-                                    <td>{row.id}</td>
-                                    <td>{row.username}</td>
-                                    <td>
-                                        <span className={`status-pill ${row.status}`}>
-                                            {row.status}
-                                        </span>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="3">
+                                        <div className="loader-container">
+                                            <div className="spinner"></div>
+                                            <p>Fetching dynamic data...</p>
+                                        </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                paginatedData.map((row, idx) => (
+                                    <tr key={idx}>
+                                        <td>{row.id}</td>
+                                        <td>{row.username}</td>
+                                        <td>
+                                            <span className={`status-pill ${row.status}`}>
+                                                {row.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                             {data.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan="3" className="no-data">No data found using the Data Code service</td>

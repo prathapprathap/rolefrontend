@@ -9,16 +9,22 @@ const Roles = () => {
     const [totalPages, setTotalPages] = useState(0);
     const limit = 6;
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
     const [formData, setFormData] = useState({ role_name: '', permissions: [], status: 'active' });
 
     const fetchRoles = async () => {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/roles?page=${page}&limit=${limit}`);
-        if (res.data.roles) {
-            setRoles(res.data.roles);
-            setTotalPages(res.data.totalPages);
-        } else {
-            setRoles(res.data);
+        setLoading(true);
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/roles?page=${page}&limit=${limit}`);
+            if (res.data.roles) {
+                setRoles(res.data.roles);
+                setTotalPages(res.data.totalPages);
+            } else {
+                setRoles(res.data);
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -94,31 +100,38 @@ const Roles = () => {
             </div>
 
             <div className="roles-grid">
-                {roles.map(role => (
-                    <div key={role.id} className={`role-card glass-card ${role.status === 'inactive' ? 'dimmed' : ''}`}>
-                        <div className="role-card-header">
-                            <div className="role-icon">
-                                <Shield size={24} color={role.status === 'active' ? '#6366f1' : '#94a3b8'} />
-                            </div>
-                            <div className={`status-badge ${role.status}`}>
-                                {role.status === 'active' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                {role.status}
-                            </div>
-                        </div>
-
-                        <h3 className="role-name">{role.role_name}</h3>
-                        <p className="role-perms-count">{role.permissions?.includes('*') ? 'All Permissions' : `${role.permissions?.length || 0} Menus Access`}</p>
-
-                        <div className="role-actions">
-                            <button className="icon-btn" onClick={() => openEdit(role)}>
-                                <Edit2 size={18} />
-                            </button>
-                            <button className={`icon-btn ${role.status === 'active' ? 'text-danger' : 'text-success'}`} onClick={() => toggleStatus(role.id)}>
-                                <Power size={18} />
-                            </button>
-                        </div>
+                {loading ? (
+                    <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
+                        <div className="spinner"></div>
+                        <p>Loading roles...</p>
                     </div>
-                ))}
+                ) : (
+                    roles.map(role => (
+                        <div key={role.id} className={`role-card glass-card ${role.status === 'inactive' ? 'dimmed' : ''}`}>
+                            <div className="role-card-header">
+                                <div className="role-icon">
+                                    <Shield size={24} color={role.status === 'active' ? '#6366f1' : '#94a3b8'} />
+                                </div>
+                                <div className={`status-badge ${role.status}`}>
+                                    {role.status === 'active' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                                    {role.status}
+                                </div>
+                            </div>
+
+                            <h3 className="role-name">{role.role_name}</h3>
+                            <p className="role-perms-count">{role.permissions?.includes('*') ? 'All Permissions' : `${role.permissions?.length || 0} Menus Access`}</p>
+
+                            <div className="role-actions">
+                                <button className="icon-btn" onClick={() => openEdit(role)}>
+                                    <Edit2 size={18} />
+                                </button>
+                                <button className={`icon-btn ${role.status === 'active' ? 'text-danger' : 'text-success'}`} onClick={() => toggleStatus(role.id)}>
+                                    <Power size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {totalPages > 1 && (

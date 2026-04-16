@@ -109,7 +109,10 @@ const IconsPage = () => {
 
             <div className="table-wrapper glass-card">
                 {loading ? (
-                    <div className="loading-state">Loading icons...</div>
+                    <div className="loader-container">
+                        <div className="spinner"></div>
+                        <p>Loading icons...</p>
+                    </div>
                 ) : (
                     <>
                         <table className="data-table">
